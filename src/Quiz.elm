@@ -1,7 +1,10 @@
 module Quiz exposing (Message, Model, init, update, view)
 
+import Css exposing (..)
 import Expression exposing (Operator)
+import Html.Attributes exposing (rows)
 import Html.Styled as Html exposing (Html)
+import Html.Styled.Attributes as Attribute
 import Html.Styled.Events as Event
 import Question
 import Random exposing (Generator)
@@ -116,9 +119,18 @@ update message ((Quiz data) as model) =
 
 view : Model -> Html Message
 view (Quiz data) =
-    Html.div []
+    Html.div [ Attribute.class "quiz" ]
         [ viewSummary data
-        , Html.div []
+        , Html.div
+            [ Attribute.classList [ ( "quiz", True ), ( "current", True ) ]
+            , Attribute.css
+                [ displayFlex
+                , flexDirection row
+                , flexWrap noWrap
+                , justifyContent center
+                , alignItems center
+                ]
+            ]
             [ viewPrevious data
             , Html.map QuestionMessage <| Question.view data.currentQuestion
             , viewNext data
@@ -135,13 +147,54 @@ viewSummary data =
                 |> Maybe.withDefault Question.defaultSummary
 
         content =
-            List.concat
-                [ List.map Question.summary data.previousQuestions
-                , [ Question.summary data.currentQuestion ]
-                , List.map toSummary data.nextQuestions
+            [ Html.div
+                [ Attribute.class "previous"
+                , Attribute.css
+                    [ displayFlex
+                    , flexDirection rowReverse
+                    , flexWrap noWrap
+                    , justifyContent end
+                    , alignItems center
+                    ]
                 ]
+              <|
+                List.map Question.summary data.previousQuestions
+            , Html.div
+                [ Attribute.class "current"
+                , Attribute.css
+                    [ displayFlex
+                    , flexDirection row
+                    , flexWrap noWrap
+                    , justifyContent center
+                    , alignItems center
+                    ]
+                ]
+                [ Question.summary data.currentQuestion ]
+            , Html.div
+                [ Attribute.class "next"
+                , Attribute.css
+                    [ displayFlex
+                    , flexDirection row
+                    , flexWrap noWrap
+                    , justifyContent start
+                    , alignItems center
+                    ]
+                ]
+              <|
+                List.map toSummary data.nextQuestions
+            ]
     in
-    Html.div [] content
+    Html.div
+        [ Attribute.class "summary"
+        , Attribute.css
+            [ displayFlex
+            , flexDirection row
+            , flexWrap noWrap
+            , justifyContent center
+            , alignItems center
+            ]
+        ]
+        content
 
 
 viewPrevious : Data -> Html Message

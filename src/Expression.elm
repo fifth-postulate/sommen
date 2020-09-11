@@ -1,6 +1,8 @@
 module Expression exposing (Expression, Operator(..), Range(..), eval, expression, operator, value, view)
 
+import Css exposing (..)
 import Html.Styled as Html exposing (Html)
+import Html.Styled.Attributes as Attribute
 import Random exposing (Generator)
 
 
@@ -59,7 +61,12 @@ operator =
 
 view : Expression -> Html msg
 view (Expression left op right) =
-    Html.div []
+    Html.div
+        [ Attribute.class "expression"
+        , Attribute.css
+            [ display inlineBlock
+            ]
+        ]
         [ viewValue left
         , viewOperator op
         , viewValue right
@@ -73,7 +80,7 @@ viewValue n =
 
 viewIntegerValue : Int -> Html msg
 viewIntegerValue n =
-    Html.span [] [ Html.text <| String.fromInt n ]
+    Html.span [ Attribute.class "value" ] [ Html.text <| String.fromInt n ]
 
 
 viewOperator : Operator -> Html msg
@@ -90,4 +97,4 @@ viewOperator op =
                 Multiplication ->
                     "⨉"
     in
-    Html.span [] [ Html.text symbol ]
+    Html.span [ Attribute.class "operator" ] [ Html.text symbol ]
