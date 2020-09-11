@@ -1,8 +1,8 @@
 module Quiz exposing (Message, Model, init, update, view)
 
 import Expression exposing (Operator)
-import Html exposing (Html)
-import Html.Events as Event
+import Html.Styled as Html exposing (Html)
+import Html.Styled.Events as Event
 import Question
 import Random exposing (Generator)
 

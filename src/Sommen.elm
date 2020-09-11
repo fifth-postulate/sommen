@@ -2,13 +2,14 @@ module Sommen exposing (..)
 
 import Browser
 import Expression exposing (Operator(..), Range(..), operator, value)
+import Html.Styled as Html
 import Quiz
 
 
 main =
     Browser.element
         { init = init
-        , view = Quiz.view
+        , view = Quiz.view >> Html.toUnstyled
         , update = Quiz.update
         , subscriptions = subscriptions
         }

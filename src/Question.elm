@@ -1,9 +1,9 @@
 module Question exposing (Message, Model, defaultSummary, init, summary, update, view)
 
 import Expression exposing (Expression, Operator, expression)
-import Html exposing (Html)
-import Html.Attributes as Attribute
-import Html.Events as Event
+import Html.Styled as Html exposing (Html)
+import Html.Styled.Attributes as Attribute
+import Html.Styled.Events as Event
 import Random exposing (Generator)
 
 

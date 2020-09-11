@@ -1,6 +1,6 @@
 module Expression exposing (Expression, Operator(..), Range(..), eval, expression, operator, value, view)
 
-import Html exposing (Html)
+import Html.Styled as Html exposing (Html)
 import Random exposing (Generator)
 
 
