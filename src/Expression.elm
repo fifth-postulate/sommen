@@ -8,22 +8,22 @@ type Expression
     = Expression Int Operator Int
 
 
-eval : Expression -> Maybe Int
+eval : Expression -> Int
 eval (Expression left op right) =
     lookup op left right
 
 
-lookup : Operator -> Int -> Int -> Maybe Int
-lookup op l r =
+lookup : Operator -> Int -> Int -> Int
+lookup op =
     case op of
         Addition ->
-            Just <| l + r
+            (+)
 
         Subtraction ->
-            Just <| l - r
+            (-)
 
         Multiplication ->
-            Just <| l * r
+            (*)
 
 
 type Operator
