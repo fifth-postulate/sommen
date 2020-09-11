@@ -3,6 +3,7 @@ module Sommen exposing (..)
 import Browser
 import Expression exposing (Expression, Operator(..), Range(..), expression, operator, value)
 import Html exposing (Html)
+import Question
 import Random
 
 
@@ -24,41 +25,37 @@ init _ =
         ops =
             operator Addition [ Multiplication ]
 
-        generator =
-            expression vs ops vs
+        ( question, cmd ) =
+            Question.init vs ops
     in
-    ( CreatingQuestion, Random.generate ExpressionReceived generator )
+    ( Quiz question, Cmd.map QuestionMessage cmd )
 
 
 type Model
-    = CreatingQuestion
-    | Question Expression
+    = Quiz Question.Model
 
 
 type Message
-    = ExpressionReceived Expression
+    = QuestionMessage Question.Message
 
 
 update : Message -> Model -> ( Model, Cmd Message )
-update message model =
+update message (Quiz questionModel) =
     case message of
-        ExpressionReceived e ->
-            ( Question e, Cmd.none )
+        QuestionMessage msg ->
+            let
+                ( nextQuestionModel, cmd ) =
+                    Question.update msg questionModel
+            in
+            ( Quiz nextQuestionModel, Cmd.map QuestionMessage cmd )
 
 
 view : Model -> Html Message
 view model =
     case model of
-        CreatingQuestion ->
-            waitForIt
-
-        Question e ->
-            Expression.view e
-
-
-waitForIt : Html msg
-waitForIt =
-    Html.text "creating a question"
+        Quiz questionModel ->
+            Question.view questionModel
+                |> Html.map QuestionMessage
 
 
 subscriptions : Model -> Sub Message
