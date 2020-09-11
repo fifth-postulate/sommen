@@ -1,8 +1,8 @@
-module Question exposing (Message, Model, init, update, view)
+module Question exposing (Message, Model, defaultSummary, init, summary, update, view)
 
 import Expression exposing (Expression, Operator, expression)
 import Html exposing (Html)
-import Html.Attributes as Attribute exposing (disabled)
+import Html.Attributes as Attribute
 import Html.Events as Event
 import Random exposing (Generator)
 
@@ -35,6 +35,16 @@ type Status
     | Incorrect
 
 
+status : Model -> Status
+status model =
+    case model of
+        CreatingQuestion ->
+            UnChecked
+
+        Question data ->
+            data.status
+
+
 toStatus : Bool -> Status
 toStatus correct =
     if correct then
@@ -45,8 +55,8 @@ toStatus correct =
 
 
 statusToString : Status -> String
-statusToString status =
-    case status of
+statusToString aStatus =
+    case aStatus of
         UnChecked ->
             "?"
 
@@ -105,13 +115,13 @@ check model =
             case ( data.status, data.answer ) of
                 ( UnChecked, Just n ) ->
                     let
-                        status =
+                        aStatus =
                             data.expression
                                 |> Expression.eval
                                 |> (==) n
                                 |> toStatus
                     in
-                    Question { data | status = status }
+                    Question { data | status = aStatus }
 
                 _ ->
                     Question data
@@ -156,5 +166,23 @@ viewData data =
 
 
 viewStatus : Status -> Html msg
-viewStatus status =
-    Html.span [] [ Html.text <| statusToString status ]
+viewStatus aStatus =
+    Html.span [] [ Html.text <| statusToString aStatus ]
+
+
+summary : Model -> Html msg
+summary model =
+    model
+        |> status
+        |> statusToString
+        |> summaryContent
+
+
+summaryContent : String -> Html msg
+summaryContent content =
+    Html.div [] [ Html.text content ]
+
+
+defaultSummary : Html msg
+defaultSummary =
+    summaryContent <| statusToString UnChecked
