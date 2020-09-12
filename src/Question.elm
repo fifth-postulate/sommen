@@ -2,10 +2,10 @@ module Question exposing (Message, Model, defaultSummary, init, summary, update,
 
 import Css exposing (..)
 import Expression exposing (Expression, Operator, expression)
-import Html.Attributes exposing (rows)
 import Html.Styled as Html exposing (Html)
 import Html.Styled.Attributes as Attribute
 import Html.Styled.Events as Event
+import Json.Decode as Decode
 import Random exposing (Generator)
 
 
@@ -82,6 +82,7 @@ type Message
     = ExpressionReceived Expression
     | InputChanged String
     | Checked
+    | DoNothing
 
 
 update : Message -> Model -> ( Model, Cmd Message )
@@ -95,6 +96,9 @@ update message model =
 
         Checked ->
             ( check model, Cmd.none )
+
+        DoNothing ->
+            ( model, Cmd.none )
 
 
 updateData : String -> Model -> Model
@@ -181,12 +185,30 @@ viewData data =
             , Attribute.type_ "input"
             , Attribute.value value
             , Event.onInput InputChanged
+            , onEnter Checked DoNothing
             ]
             []
         , viewStatus data.status
         , viewAnswer data
         , Html.button [ Attribute.css [ fontSize (px 30) ], Attribute.disabled disabled, Event.onClick Checked ] [ Html.text "Check" ]
         ]
+
+
+onEnter : Message -> Message -> Html.Attribute Message
+onEnter messageOnEnter alternative =
+    let
+        toMessage n =
+            if n == 13 then
+                messageOnEnter
+
+            else
+                alternative
+
+        decoder =
+            Event.keyCode
+                |> Decode.map toMessage
+    in
+    Event.on "keyup" decoder
 
 
 viewStatus : Status -> Html msg
