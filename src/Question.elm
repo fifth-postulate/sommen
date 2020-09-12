@@ -1,6 +1,8 @@
 module Question exposing (Message, Model, defaultSummary, init, summary, update, view)
 
+import Css exposing (..)
 import Expression exposing (Expression, Operator, expression)
+import Html.Attributes exposing (rows)
 import Html.Styled as Html exposing (Html)
 import Html.Styled.Attributes as Attribute
 import Html.Styled.Events as Event
@@ -64,7 +66,7 @@ statusToString aStatus =
             "✔"
 
         Incorrect ->
-            "❌"
+            "⤬"
 
 
 create : Expression -> Data
@@ -139,7 +141,7 @@ view model =
 
 waitForIt : Html msg
 waitForIt =
-    Html.text "creating a question"
+    Html.text "Wij zijn een som aan het maken"
 
 
 viewData : Data -> Html Message
@@ -156,12 +158,21 @@ viewData data =
         disabled =
             not hasAnswer || not answerUnchecked
     in
-    Html.div []
+    Html.div
+        [ Attribute.css
+            [ displayFlex
+            , flexDirection row
+            , flexWrap noWrap
+            , justifyContent center
+            , alignItems center
+            , fontSize (px 50)
+            ]
+        ]
         [ Expression.view data.expression
         , Html.span [] [ Html.text "=" ]
-        , Html.input [ Attribute.type_ "input", Event.onInput InputChanged ] []
+        , Html.input [ Attribute.css [ fontSize (px 50) ], Attribute.size 4, Attribute.type_ "input", Event.onInput InputChanged ] []
         , viewStatus data.status
-        , Html.button [ Attribute.disabled disabled, Event.onClick Checked ] [ Html.text "Check" ]
+        , Html.button [ Attribute.css [ fontSize (px 30) ], Attribute.disabled disabled, Event.onClick Checked ] [ Html.text "Check" ]
         ]
 
 
@@ -174,15 +185,47 @@ summary : Model -> Html msg
 summary model =
     model
         |> status
-        |> statusToString
         |> summaryContent
 
 
-summaryContent : String -> Html msg
-summaryContent content =
-    Html.div [] [ Html.text content ]
+summaryContent : Status -> Html msg
+summaryContent aStatus =
+    let
+        c =
+            case aStatus of
+                UnChecked ->
+                    rgb 192 192 192
+
+                Correct ->
+                    rgb 0 255 0
+
+                Incorrect ->
+                    rgb 255 0 0
+
+        content =
+            statusToString aStatus
+    in
+    Html.div
+        [ Attribute.css
+            [ displayFlex
+            , flexDirection row
+            , flexWrap noWrap
+            , justifyContent center
+            , alignItems center
+            , width (px 30)
+            , height (px 30)
+            , borderWidth (px 1)
+            , borderStyle solid
+            , borderColor (rgb 0 0 0)
+            , borderRadius (px 5)
+            , color (rgb 0 0 0)
+            , backgroundColor c
+            , margin (px 3)
+            ]
+        ]
+        [ Html.text content ]
 
 
 defaultSummary : Html msg
 defaultSummary =
-    summaryContent <| statusToString UnChecked
+    summaryContent UnChecked

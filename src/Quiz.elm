@@ -2,7 +2,6 @@ module Quiz exposing (Message, Model, init, update, view)
 
 import Css exposing (..)
 import Expression exposing (Operator)
-import Html.Attributes exposing (rows)
 import Html.Styled as Html exposing (Html)
 import Html.Styled.Attributes as Attribute
 import Html.Styled.Events as Event
@@ -167,6 +166,7 @@ viewSummary data =
                     , flexWrap noWrap
                     , justifyContent center
                     , alignItems center
+                    , transform (scale 1.2)
                     ]
                 ]
                 [ Question.summary data.currentQuestion ]
@@ -201,7 +201,7 @@ viewPrevious : Data -> Html Message
 viewPrevious { previousQuestions } =
     case List.head previousQuestions of
         Just _ ->
-            Html.div [ Event.onClick Previous ] [ Html.text "⏴" ]
+            Html.div [ Attribute.css [ fontSize (px 50) ], Event.onClick Previous ] [ Html.text "⏴" ]
 
         Nothing ->
             Html.div [] []
@@ -211,7 +211,7 @@ viewNext : Data -> Html Message
 viewNext { nextQuestions } =
     case List.head nextQuestions of
         Just _ ->
-            Html.div [ Event.onClick Next ] [ Html.text "⏵" ]
+            Html.div [ Attribute.css [ fontSize (px 50) ], Event.onClick Next ] [ Html.text "⏵" ]
 
         Nothing ->
             Html.div [] []
