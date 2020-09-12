@@ -160,8 +160,8 @@ viewData data =
 
         value =
             data.answer
-            |> Maybe.map String.fromInt
-            |> Maybe.withDefault data.answerInput
+                |> Maybe.map String.fromInt
+                |> Maybe.withDefault data.answerInput
     in
     Html.div
         [ Attribute.css
@@ -184,6 +184,7 @@ viewData data =
             ]
             []
         , viewStatus data.status
+        , viewAnswer data
         , Html.button [ Attribute.css [ fontSize (px 30) ], Attribute.disabled disabled, Event.onClick Checked ] [ Html.text "Check" ]
         ]
 
@@ -191,6 +192,22 @@ viewData data =
 viewStatus : Status -> Html msg
 viewStatus aStatus =
     Html.span [] [ Html.text <| statusToString aStatus ]
+
+
+viewAnswer : Data -> Html msg
+viewAnswer data =
+    let
+        content =
+            case data.status of
+                Incorrect ->
+                    data.expression
+                        |> Expression.eval
+                        |> String.fromInt
+
+                _ ->
+                    ""
+    in
+    Html.span [] [ Html.text content ]
 
 
 summary : Model -> Html msg
