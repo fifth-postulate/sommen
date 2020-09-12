@@ -157,6 +157,11 @@ viewData data =
 
         disabled =
             not hasAnswer || not answerUnchecked
+
+        value =
+            data.answer
+            |> Maybe.map String.fromInt
+            |> Maybe.withDefault data.answerInput
     in
     Html.div
         [ Attribute.css
@@ -170,7 +175,14 @@ viewData data =
         ]
         [ Expression.view data.expression
         , Html.span [] [ Html.text "=" ]
-        , Html.input [ Attribute.css [ fontSize (px 50) ], Attribute.size 4, Attribute.type_ "input", Event.onInput InputChanged ] []
+        , Html.input
+            [ Attribute.css [ fontSize (px 50) ]
+            , Attribute.size 4
+            , Attribute.type_ "input"
+            , Attribute.value value
+            , Event.onInput InputChanged
+            ]
+            []
         , viewStatus data.status
         , Html.button [ Attribute.css [ fontSize (px 30) ], Attribute.disabled disabled, Event.onClick Checked ] [ Html.text "Check" ]
         ]
