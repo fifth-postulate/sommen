@@ -1,22 +1,26 @@
 module Sommen exposing (..)
 
-import Browser
+import Browser exposing (Document)
+import Browser.Navigation exposing (Key)
 import Expression exposing (Operator(..), Range(..))
 import Html.Styled as Html
 import Quiz
+import Url exposing (Url)
 
 
 main =
-    Browser.element
+    Browser.application
         { init = init
-        , view = Quiz.view >> Html.toUnstyled
-        , update = Quiz.update
+        , view = view
+        , update = update
         , subscriptions = subscriptions
+        , onUrlChange = \_ -> DoNothing
+        , onUrlRequest = \_ -> DoNothing
         }
 
 
-init : () -> ( Quiz.Model, Cmd Quiz.Message )
-init _ =
+init : () -> Url -> Key -> ( Model, Cmd Message )
+init _ url _ =
     let
         description =
             { numberOfQuestions = 12
@@ -27,9 +31,48 @@ init _ =
         ( quiz, cmd ) =
             Quiz.init description
     in
-    ( quiz, cmd )
+    ( Initialized quiz, Cmd.map QuizMessage cmd )
 
 
-subscriptions : Quiz.Model -> Sub Quiz.Message
+type Model
+    = Initialized Quiz.Model
+
+
+type Message
+    = QuizMessage Quiz.Message
+    | DoNothing
+
+
+update : Message -> Model -> ( Model, Cmd Message )
+update message model =
+    case ( message, model ) of
+        ( QuizMessage msg, Initialized quiz ) ->
+            let
+                ( nextQuiz, cmd ) =
+                    Quiz.update msg quiz
+            in
+            ( Initialized nextQuiz, Cmd.map QuizMessage cmd )
+
+        ( DoNothing, _ ) ->
+            ( model, Cmd.none )
+
+
+view : Model -> Document Message
+view model =
+    let
+        html =
+            case model of
+                Initialized quiz ->
+                    quiz
+                        |> Quiz.view
+                        |> Html.map QuizMessage
+                        |> Html.toUnstyled
+    in
+    { title = "Sommen"
+    , body = [ html ]
+    }
+
+
+subscriptions : Model -> Sub Message
 subscriptions _ =
     Sub.none
