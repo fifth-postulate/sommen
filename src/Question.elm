@@ -5,7 +5,7 @@ import Expression exposing (Expression, Operator, expression)
 import Html.Styled as Html exposing (Html)
 import Html.Styled.Attributes as Attribute
 import Html.Styled.Events as Event
-import Json.Decode as Decode
+import KeyEvent exposing (onEnter)
 import Random exposing (Generator)
 
 
@@ -192,23 +192,6 @@ viewData data =
         , viewAnswer data
         , Html.button [ Attribute.css [ fontSize (px 30) ], Attribute.disabled disabled, Event.onClick Checked ] [ Html.text "Check" ]
         ]
-
-
-onEnter : Message -> Message -> Html.Attribute Message
-onEnter messageOnEnter alternative =
-    let
-        toMessage n =
-            if n == 13 then
-                messageOnEnter
-
-            else
-                alternative
-
-        decoder =
-            Event.keyCode
-                |> Decode.map toMessage
-    in
-    Event.on "keyup" decoder
 
 
 viewStatus : Status -> Html msg

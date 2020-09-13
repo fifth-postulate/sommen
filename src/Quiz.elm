@@ -5,6 +5,7 @@ import Expression exposing (Operator)
 import Html.Styled as Html exposing (Html)
 import Html.Styled.Attributes as Attribute
 import Html.Styled.Events as Event
+import KeyEvent exposing (onPageDown)
 import Question
 import Random exposing (Generator)
 
@@ -97,6 +98,7 @@ type Message
     = QuestionMessage Question.Message
     | Next
     | Previous
+    | DoNothing
 
 
 update : Message -> Model -> ( Model, Cmd Message )
@@ -115,10 +117,13 @@ update message ((Quiz data) as model) =
         Previous ->
             ( previous model, Cmd.none )
 
+        DoNothing ->
+            ( model, Cmd.none )
+
 
 view : Model -> Html Message
 view (Quiz data) =
-    Html.div [ Attribute.class "quiz" ]
+    Html.div [ Attribute.class "quiz", onPageDown Next DoNothing ]
         [ viewSummary data
         , Html.div
             [ Attribute.classList [ ( "quiz", True ), ( "current", True ) ]
