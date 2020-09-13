@@ -1,7 +1,7 @@
 module Sommen exposing (..)
 
 import Browser
-import Expression exposing (Operator(..), Range(..), operator, value)
+import Expression exposing (Operator(..), Range(..))
 import Html.Styled as Html
 import Quiz
 
@@ -18,14 +18,14 @@ main =
 init : () -> ( Quiz.Model, Cmd Quiz.Message )
 init _ =
     let
-        vs =
-            value <| Between 10 50
-
-        ops =
-            operator Addition [ Multiplication ]
+        description =
+            { numberOfQuestions = 12
+            , valueRange = Between 10 50
+            , operators = ( Addition, [ Multiplication ] )
+            }
 
         ( quiz, cmd ) =
-            Quiz.init 12 vs ops
+            Quiz.init description
     in
     ( quiz, cmd )
 

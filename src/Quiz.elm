@@ -1,34 +1,72 @@
-module Quiz exposing (Message, Model, init, update, view)
+module Quiz exposing (Description, Message, Model, decodeDescription, encodeDescription, init, update, view)
 
 import Css exposing (..)
-import Expression exposing (Operator)
+import Expression exposing (Operator, Range, operator, value)
 import Html.Styled as Html exposing (Html)
 import Html.Styled.Attributes as Attribute
 import Html.Styled.Events as Event
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode
 import KeyEvent exposing (onPageDown)
 import Question
 import Random exposing (Generator)
 
 
-init : Int -> Generator Int -> Generator Operator -> ( Model, Cmd Message )
-init numberOfQuestions values operators =
+init : Description -> ( Model, Cmd Message )
+init description =
     let
-        ( question, cmd ) =
-            Question.init values operators
-
         configuration =
-            { valueGenerator = values
-            , operatorGenerator = operators
-            }
+            configurationFrom description
+
+        ( question, cmd ) =
+            Question.init configuration.valueGenerator configuration.operatorGenerator
     in
     ( Quiz
         { currentQuestion = question
         , previousQuestions = []
-        , nextQuestions = List.repeat (numberOfQuestions - 1) Nothing
+        , nextQuestions = List.repeat (description.numberOfQuestions - 1) Nothing
         , configuration = configuration
         }
     , Cmd.map QuestionMessage cmd
     )
+
+
+type alias Description =
+    { numberOfQuestions : Int
+    , valueRange : Range
+    , operators : ( Operator, List Operator )
+    }
+
+
+encodeDescription : Description -> Encode.Value
+encodeDescription description =
+    let
+        encodeOperators ( main, rest ) =
+            Encode.object
+                [ ( "main", Expression.encodeOperator main )
+                , ( "rest", Encode.list Expression.encodeOperator rest )
+                ]
+    in
+    Encode.object
+        [ ( "numberOfQuestions", Encode.int description.numberOfQuestions )
+        , ( "valueRange", Expression.encodeRange description.valueRange )
+        , ( "operators", encodeOperators description.operators )
+        ]
+
+
+decodeDescription : Decoder Description
+decodeDescription =
+    let
+        decodeOperators : Decoder ( Operator, List Operator )
+        decodeOperators =
+            Decode.map2 Tuple.pair
+                (Decode.field "main" Expression.decodeOperator)
+                (Decode.field "rest" <| Decode.list Expression.decodeOperator)
+    in
+    Decode.map3 Description
+        (Decode.field "numberOfQuestions" Decode.int)
+        (Decode.field "valueRange" Expression.decodeRange)
+        (Decode.field "operators" decodeOperators)
 
 
 type Model
@@ -47,6 +85,25 @@ type alias Configuration =
     { valueGenerator : Generator Int
     , operatorGenerator : Generator Operator
     }
+
+
+configurationFrom : Description -> Configuration
+configurationFrom description =
+    let
+        vs =
+            value <| description.valueRange
+
+        ops =
+            uncurry operator description.operators
+    in
+    { valueGenerator = vs
+    , operatorGenerator = ops
+    }
+
+
+uncurry : (a -> b -> c) -> ( a, b ) -> c
+uncurry f ( a, b ) =
+    f a b
 
 
 next : Model -> ( Model, Cmd Message )
