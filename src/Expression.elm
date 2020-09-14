@@ -119,9 +119,9 @@ decodeExpression =
     let
         decodeExpressionExpression =
             Decode.map3 Expression
-                decodeValue
-                decodeOperator
-                decodeValue
+                (Decode.field "left" decodeValue)
+                (Decode.field "operator" decodeOperator)
+                (Decode.field "right" decodeValue)
 
         decodeExpressionType aType =
             case aType of
@@ -197,7 +197,7 @@ decodeValue : Decoder Int
 decodeValue =
     let
         decodeIntegerValue =
-            Decode.int
+            Decode.field "value" Decode.int
 
         decodeValueType aType =
             case aType of
