@@ -180,7 +180,7 @@ decodeOperator =
                 _ ->
                     Decode.fail <| "unknown operator \"" ++ op ++ "\""
     in
-    Decode.field "operator" Decode.string
+    Decode.string
         |> Decode.andThen operatorSelector
 
 

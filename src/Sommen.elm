@@ -1,9 +1,12 @@
 module Sommen exposing (..)
 
+import Base64
 import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
+import Dict exposing (Dict)
 import Expression exposing (Operator(..), Range(..))
-import Html.Styled as Html
+import Html.Styled as Html exposing (Html)
+import Json.Decode as Json
 import Quiz
 import Url exposing (Url)
 
@@ -22,20 +25,46 @@ main =
 init : () -> Url -> Key -> ( Model, Cmd Message )
 init _ url _ =
     let
-        description =
-            { numberOfQuestions = 12
-            , valueRange = Between 10 50
-            , operators = ( Addition, [ Multiplication ] )
-            }
-
-        ( quiz, cmd ) =
-            Quiz.init description
+        toModel ( quiz, cmd ) =
+            ( Initialized quiz, Cmd.map QuizMessage cmd )
     in
-    ( Initialized quiz, Cmd.map QuizMessage cmd )
+    url.query
+        |> Maybe.map queryToDict
+        |> Maybe.andThen (Dict.get "quiz")
+        |> Maybe.andThen (Base64.decode >> Result.toMaybe)
+        |> Maybe.andThen (Json.decodeString Quiz.decodeDescription >> Result.toMaybe)
+        |> Maybe.map Quiz.init
+        |> Maybe.map toModel
+        |> Maybe.withDefault ( CouldNotInitializeQuiz, Cmd.none )
+
+
+queryToDict : String -> Dict String String
+queryToDict input =
+    let
+        splitAtIndex : String -> Int -> ( String, String )
+        splitAtIndex word n =
+            ( String.left n word, String.dropLeft (n + 1) word )
+
+        toPair query =
+            query
+                |> String.indices "="
+                |> List.head
+                |> Maybe.map (splitAtIndex query)
+
+        fill query dict =
+            query
+                |> Maybe.map (\( k, v ) -> Dict.insert k v dict)
+                |> Maybe.withDefault dict
+    in
+    input
+        |> String.split "&"
+        |> List.map toPair
+        |> List.foldl fill Dict.empty
 
 
 type Model
-    = Initialized Quiz.Model
+    = CouldNotInitializeQuiz
+    | Initialized Quiz.Model
 
 
 type Message
@@ -53,7 +82,7 @@ update message model =
             in
             ( Initialized nextQuiz, Cmd.map QuizMessage cmd )
 
-        ( DoNothing, _ ) ->
+        ( _, _ ) ->
             ( model, Cmd.none )
 
 
@@ -66,11 +95,21 @@ view model =
                     quiz
                         |> Quiz.view
                         |> Html.map QuizMessage
-                        |> Html.toUnstyled
+
+                CouldNotInitializeQuiz ->
+                    whoops
     in
     { title = "Sommen"
-    , body = [ html ]
+    , body = [ Html.toUnstyled html ]
     }
+
+
+whoops : Html msg
+whoops =
+    Html.div []
+        [ Html.h1 [] [ Html.text "Sommen" ]
+        , Html.p [] [ Html.text "Ik kon geen sommen maken voor jou." ]
+        ]
 
 
 subscriptions : Model -> Sub Message
