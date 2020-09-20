@@ -1,4 +1,4 @@
-module Expression exposing (Expression, Operator(..), Range(..), decodeExpression, decodeOperator, decodeRange, decodeValue, encodeExpression, encodeOperator, encodeRange, encodeValue, eval, expression, operator, value, view)
+module Expression exposing (Expression, Operator(..), Range(..), decodeExpression, decodeOperator, decodeRange, decodeValue, encodeExpression, encodeOperator, encodeRange, encodeValue, eval, expression, operator, operatorToString, value, view)
 
 import Css exposing (..)
 import Html.Styled as Html exposing (Html)

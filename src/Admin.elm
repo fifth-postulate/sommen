@@ -1,5 +1,6 @@
 module Admin exposing (..)
 
+import Admin.Operator as OperatorAdmin
 import Base64
 import Browser
 import Expression exposing (Operator(..), Range(..))
@@ -19,29 +20,36 @@ main =
 
 init : () -> ( Model, Cmd Message )
 init _ =
-    ( {}, Cmd.none )
+    ( { operators = OperatorAdmin.create Addition }, Cmd.none )
 
 
 type alias Model =
-    {}
+    { operators : OperatorAdmin.Model
+    }
 
 
 type Message
-    = DoNothing
+    = OperatorMessage OperatorAdmin.Message
 
 
 update : Message -> Model -> ( Model, Cmd Message )
-update _ model =
-    ( model, Cmd.none )
+update message model =
+    case message of
+        OperatorMessage msg ->
+            let
+                ( nextModel, cmd ) =
+                    OperatorAdmin.update msg model.operators
+            in
+            ( { model | operators = nextModel }, Cmd.map OperatorMessage cmd )
 
 
 view : Model -> Html Message
-view _ =
+view model =
     let
         description =
             { numberOfQuestions = 12
             , valueRange = Between 10 20
-            , operators = ( Addition, [ Multiplication ] )
+            , operators = OperatorAdmin.toPair model.operators
             }
 
         representation =
@@ -50,7 +58,12 @@ view _ =
                 |> Encode.encode 0
                 |> Base64.encode
     in
-    Html.text representation
+    Html.div []
+        [ Html.map OperatorMessage <| OperatorAdmin.view model.operators
+        , Html.div []
+            [ Html.span [] [ Html.text representation ]
+            ]
+        ]
 
 
 subscriptions : Model -> Sub Message
