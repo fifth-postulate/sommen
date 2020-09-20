@@ -1,5 +1,6 @@
 module Admin exposing (..)
 
+import Admin.Number as NumberAdmin
 import Admin.Operator as OperatorAdmin
 import Base64
 import Browser
@@ -20,21 +21,34 @@ main =
 
 init : () -> ( Model, Cmd Message )
 init _ =
-    ( { operators = OperatorAdmin.create Addition }, Cmd.none )
+    ( { numberOfQuestions = NumberAdmin.create
+      , operators = OperatorAdmin.create Addition
+      }
+    , Cmd.none
+    )
 
 
 type alias Model =
-    { operators : OperatorAdmin.Model
+    { numberOfQuestions : NumberAdmin.Model
+    , operators : OperatorAdmin.Model
     }
 
 
 type Message
-    = OperatorMessage OperatorAdmin.Message
+    = NumberOfQuestionsMessage NumberAdmin.Message
+    | OperatorMessage OperatorAdmin.Message
 
 
 update : Message -> Model -> ( Model, Cmd Message )
 update message model =
     case message of
+        NumberOfQuestionsMessage msg ->
+            let
+                ( nextModel, cmd ) =
+                    NumberAdmin.update msg model.numberOfQuestions
+            in
+            ( { model | numberOfQuestions = nextModel }, Cmd.map NumberOfQuestionsMessage cmd )
+
         OperatorMessage msg ->
             let
                 ( nextModel, cmd ) =
@@ -47,7 +61,7 @@ view : Model -> Html Message
 view model =
     let
         description =
-            { numberOfQuestions = 12
+            { numberOfQuestions = NumberAdmin.value model.numberOfQuestions
             , valueRange = Between 10 20
             , operators = OperatorAdmin.toPair model.operators
             }
@@ -59,7 +73,8 @@ view model =
                 |> Base64.encode
     in
     Html.div []
-        [ Html.map OperatorMessage <| OperatorAdmin.view model.operators
+        [ Html.map NumberOfQuestionsMessage <| NumberAdmin.view model.numberOfQuestions
+        , Html.map OperatorMessage <| OperatorAdmin.view model.operators
         , Html.div []
             [ Html.span [] [ Html.text representation ]
             ]
@@ -67,5 +82,7 @@ view model =
 
 
 subscriptions : Model -> Sub Message
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    Sub.batch
+        [ Sub.map NumberOfQuestionsMessage <| NumberAdmin.subscriptions model.numberOfQuestions
+        ]
