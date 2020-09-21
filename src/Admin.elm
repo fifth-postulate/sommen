@@ -7,9 +7,10 @@ import Base64
 import Browser
 import Expression exposing (Operator(..), Range(..))
 import Html.Styled as Html exposing (Html)
+import Html.Styled.Attributes as Attribute
 import Json.Encode as Encode
 import Quiz
-
+import Url.Builder as UrlBuilder
 
 main =
     Browser.element
@@ -93,6 +94,9 @@ view model =
                 |> Quiz.encodeDescription
                 |> Encode.encode 0
                 |> Base64.encode
+            
+        url =
+            UrlBuilder.relative ["index.html"] [UrlBuilder.string "quiz" representation ]
     in
     Html.div []
         [ Html.map NumberOfQuestionsMessage <| NumberAdmin.view model.numberOfQuestions
@@ -102,6 +106,7 @@ view model =
         , Html.div []
             [ Html.span [] [ Html.text representation ]
             ]
+        , Html.div [] [ Html.a [ Attribute.href url ] [ Html.text url ] ]
         ]
 
 
