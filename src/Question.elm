@@ -9,11 +9,11 @@ import KeyEvent exposing (onEnter)
 import Random exposing (Generator)
 
 
-init : Generator Int -> Generator Operator -> ( Model, Cmd Message )
-init vs ops =
+init : Generator Int -> Generator Operator -> Generator Int -> ( Model, Cmd Message )
+init ls ops rs =
     let
         generator =
-            expression vs ops vs
+            expression ls ops rs
     in
     ( CreatingQuestion, Random.generate ExpressionReceived generator )
 

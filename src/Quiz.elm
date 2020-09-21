@@ -19,7 +19,7 @@ init description =
             configurationFrom description
 
         ( question, cmd ) =
-            Question.init configuration.valueGenerator configuration.operatorGenerator
+            Question.init configuration.leftGenerator configuration.operatorGenerator configuration.rightGenerator
     in
     ( Quiz
         { currentQuestion = question
@@ -33,8 +33,9 @@ init description =
 
 type alias Description =
     { numberOfQuestions : Int
-    , valueRange : Range
+    , leftRange : Range
     , operators : ( Operator, List Operator )
+    , rightRange : Range
     }
 
 
@@ -49,8 +50,9 @@ encodeDescription description =
     in
     Encode.object
         [ ( "numberOfQuestions", Encode.int description.numberOfQuestions )
-        , ( "valueRange", Expression.encodeRange description.valueRange )
+        , ( "leftRange", Expression.encodeRange description.leftRange )
         , ( "operators", encodeOperators description.operators )
+        , ( "rightRange", Expression.encodeRange description.rightRange )
         ]
 
 
@@ -63,10 +65,11 @@ decodeDescription =
                 (Decode.field "main" Expression.decodeOperator)
                 (Decode.field "rest" <| Decode.list Expression.decodeOperator)
     in
-    Decode.map3 Description
+    Decode.map4 Description
         (Decode.field "numberOfQuestions" Decode.int)
-        (Decode.field "valueRange" Expression.decodeRange)
+        (Decode.field "leftRange" Expression.decodeRange)
         (Decode.field "operators" decodeOperators)
+        (Decode.field "rightRange" Expression.decodeRange)
 
 
 type Model
@@ -82,22 +85,27 @@ type alias Data =
 
 
 type alias Configuration =
-    { valueGenerator : Generator Int
+    { leftGenerator : Generator Int
     , operatorGenerator : Generator Operator
+    , rightGenerator : Generator Int
     }
 
 
 configurationFrom : Description -> Configuration
 configurationFrom description =
     let
-        vs =
-            value <| description.valueRange
+        ls =
+            value <| description.leftRange
 
         ops =
             uncurry operator description.operators
+
+        rs =
+            value <| description.rightRange
     in
-    { valueGenerator = vs
+    { leftGenerator = ls
     , operatorGenerator = ops
+    , rightGenerator = rs
     }
 
 
@@ -112,7 +120,7 @@ next ((Quiz data) as model) =
         Just Nothing ->
             let
                 ( question, cmd ) =
-                    Question.init data.configuration.valueGenerator data.configuration.operatorGenerator
+                    Question.init data.configuration.leftGenerator data.configuration.operatorGenerator data.configuration.rightGenerator
             in
             ( Quiz <| advance question data, Cmd.map QuestionMessage cmd )
 

@@ -73,8 +73,9 @@ view model =
     let
         description =
             { numberOfQuestions = NumberAdmin.value model.numberOfQuestions
-            , valueRange = RangeAdmin.toRange model.leftRange
+            , leftRange = RangeAdmin.toRange model.leftRange
             , operators = OperatorAdmin.toPair model.operators
+            , rightRange = RangeAdmin.toRange model.leftRange -- TODO make leftRange
             }
 
         representation =
