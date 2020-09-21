@@ -25,6 +25,7 @@ init _ =
     ( { numberOfQuestions = NumberAdmin.create
       , leftRange = RangeAdmin.create
       , operators = OperatorAdmin.create Addition
+      , rightRange = RangeAdmin.create
       }
     , Cmd.none
     )
@@ -34,6 +35,7 @@ type alias Model =
     { numberOfQuestions : NumberAdmin.Model
     , leftRange : RangeAdmin.Model
     , operators : OperatorAdmin.Model
+    , rightRange : RangeAdmin.Model
     }
 
 
@@ -41,6 +43,7 @@ type Message
     = NumberOfQuestionsMessage NumberAdmin.Message
     | LeftRangeMessage RangeAdmin.Message
     | OperatorMessage OperatorAdmin.Message
+    | RightRangeMessage RangeAdmin.Message
 
 
 update : Message -> Model -> ( Model, Cmd Message )
@@ -67,6 +70,13 @@ update message model =
             in
             ( { model | operators = nextModel }, Cmd.map OperatorMessage cmd )
 
+        RightRangeMessage msg ->
+            let
+                ( nextModel, cmd ) =
+                    RangeAdmin.update msg model.rightRange
+            in
+            ( { model | rightRange = nextModel }, Cmd.map RightRangeMessage cmd )
+
 
 view : Model -> Html Message
 view model =
@@ -75,7 +85,7 @@ view model =
             { numberOfQuestions = NumberAdmin.value model.numberOfQuestions
             , leftRange = RangeAdmin.toRange model.leftRange
             , operators = OperatorAdmin.toPair model.operators
-            , rightRange = RangeAdmin.toRange model.leftRange -- TODO make leftRange
+            , rightRange = RangeAdmin.toRange model.rightRange
             }
 
         representation =
@@ -88,6 +98,7 @@ view model =
         [ Html.map NumberOfQuestionsMessage <| NumberAdmin.view model.numberOfQuestions
         , Html.map LeftRangeMessage <| RangeAdmin.view "left-range" model.leftRange
         , Html.map OperatorMessage <| OperatorAdmin.view model.operators
+        , Html.map RightRangeMessage <| RangeAdmin.view "right-range" model.rightRange
         , Html.div []
             [ Html.span [] [ Html.text representation ]
             ]
@@ -99,4 +110,5 @@ subscriptions model =
     Sub.batch
         [ Sub.map NumberOfQuestionsMessage <| NumberAdmin.subscriptions model.numberOfQuestions
         , Sub.map LeftRangeMessage <| RangeAdmin.subscriptions model.leftRange
+        , Sub.map RightRangeMessage <| RangeAdmin.subscriptions model.rightRange
         ]
