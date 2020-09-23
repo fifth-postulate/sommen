@@ -1,16 +1,45 @@
 module Admin.Range exposing (Message, Model, create, subscriptions, toRange, update, view)
 
+import Admin.History as History exposing (History)
 import DoubleSlider
 import Expression exposing (Range(..))
-import Html.Styled as Html exposing (Html, i)
+import Html.Styled as Html exposing (Html)
 import Html.Styled.Attributes as Attribute
 import Html.Styled.Events as Event
 import SingleSlider
 
 
 type Model
-    = PositiveRange { slider : SingleSlider.Model, alternative : () -> Maybe Model }
-    | BetweenRange { slider : DoubleSlider.Model, alternative : () -> Maybe Model }
+    = PositiveRange { slider : SingleSlider.Model, history : History RangeOption Model }
+    | BetweenRange { slider : DoubleSlider.Model, history : History RangeOption Model }
+
+
+push : Model -> Model -> Model
+push historic current =
+    let
+        historicRangeOption =
+            toRangeOption historic
+    in
+    case current of
+        PositiveRange ({ history } as data) ->
+            PositiveRange { data | history = History.push historicRangeOption historic history }
+
+        BetweenRange ({ history } as data) ->
+            BetweenRange { data | history = History.push historicRangeOption historic history }
+
+
+latest : RangeOption -> Model -> Maybe Model
+latest option model =
+    let
+        aHistory =
+            case model of
+                PositiveRange { history } ->
+                    history
+
+                BetweenRange { history } ->
+                    history
+    in
+    History.latest option aHistory
 
 
 toRange : Model -> Range
@@ -23,14 +52,39 @@ toRange model =
             Between (floor slider.lowValue) (floor slider.highValue)
 
 
+type RangeOption
+    = PositiveOption
+    | BetweenOption
+
+
+toRangeOption : Model -> RangeOption
+toRangeOption model =
+    case model of
+        PositiveRange _ ->
+            PositiveOption
+
+        BetweenRange _ ->
+            BetweenOption
+
+
 create : Model
 create =
-    defaultPositiveRange
+    default PositiveOption
+
+
+default : RangeOption -> Model
+default option =
+    case option of
+        PositiveOption ->
+            defaultPositiveRange
+
+        BetweenOption ->
+            defaultBetweenRange
 
 
 defaultPositiveRange : Model
 defaultPositiveRange =
-    PositiveRange { slider = defaultPositiveSlider, alternative = \_ -> Nothing }
+    PositiveRange { slider = defaultPositiveSlider, history = History.empty }
 
 
 defaultPositiveSlider : SingleSlider.Model
@@ -44,7 +98,7 @@ defaultPositiveSlider =
 
 defaultBetweenRange : Model
 defaultBetweenRange =
-    BetweenRange { slider = defaultBetweenSlider, alternative = \_ -> Nothing }
+    BetweenRange { slider = defaultBetweenSlider, history = History.empty }
 
 
 defaultBetweenSlider : DoubleSlider.Model
@@ -56,25 +110,10 @@ defaultBetweenSlider =
     { defaultDoubleSlider | min = 1, max = 200, step = 1, lowValue = 10, highValue = 20 }
 
 
-updateAlternative : Model -> Model -> Model
-updateAlternative alt model =
-    case model of
-        PositiveRange data ->
-            PositiveRange { data | alternative = \_ -> Just alt }
-
-        BetweenRange data ->
-            BetweenRange { data | alternative = \_ -> Just alt }
-
-
 type Message
     = PositiveMessage SingleSlider.Msg
     | BetweenMessage DoubleSlider.Msg
     | Select RangeOption
-
-
-type RangeOption
-    = PositiveOption
-    | BetweenOption
 
 
 update : Message -> Model -> ( Model, Cmd Message )
@@ -94,21 +133,14 @@ update message model =
             in
             ( BetweenRange { between | slider = nextSlider }, Cmd.map BetweenMessage cmd )
 
-        ( Select PositiveOption, BetweenRange { alternative } ) ->
+        ( Select option, _ ) ->
             let
                 nextModel =
-                    alternative ()
-                        |> Maybe.withDefault defaultPositiveRange
+                    model
+                        |> latest option
+                        |> Maybe.withDefault (default option)
             in
-            ( updateAlternative model nextModel, Cmd.none )
-
-        ( Select BetweenOption, PositiveRange { alternative } ) ->
-            let
-                nextModel =
-                    alternative ()
-                        |> Maybe.withDefault defaultBetweenRange
-            in
-            ( updateAlternative model nextModel, Cmd.none )
+            ( push model nextModel, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
