@@ -147,7 +147,7 @@ update message model =
                 ( nextSlider, cmd, _ ) =
                     SingleSlider.update msg slider
             in
-            ( PositiveRange { fixed | slider = nextSlider }, Cmd.map FixedMessage cmd )
+            ( FixedRange { fixed | slider = nextSlider }, Cmd.map FixedMessage cmd )
 
         ( PositiveMessage msg, PositiveRange ({ slider } as positive) ) ->
             let

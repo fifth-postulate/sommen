@@ -10976,9 +10976,9 @@ var $truqu$elm_base64$Base64$Decode$validateAndDecode = function (input) {
 };
 var $truqu$elm_base64$Base64$Decode$decode = A2($elm$core$Basics$composeR, $truqu$elm_base64$Base64$Decode$pad, $truqu$elm_base64$Base64$Decode$validateAndDecode);
 var $truqu$elm_base64$Base64$decode = $truqu$elm_base64$Base64$Decode$decode;
-var $author$project$Quiz$Description = F3(
-	function (numberOfQuestions, valueRange, operators) {
-		return {numberOfQuestions: numberOfQuestions, operators: operators, valueRange: valueRange};
+var $author$project$Quiz$Description = F4(
+	function (numberOfQuestions, leftRange, operators, rightRange) {
+		return {leftRange: leftRange, numberOfQuestions: numberOfQuestions, operators: operators, rightRange: rightRange};
 	});
 var $author$project$Expression$Addition = {$: 'Addition'};
 var $author$project$Expression$Multiplication = {$: 'Multiplication'};
@@ -11004,6 +11004,9 @@ var $author$project$Expression$Between = F2(
 	function (a, b) {
 		return {$: 'Between', a: a, b: b};
 	});
+var $author$project$Expression$Fixed = function (a) {
+	return {$: 'Fixed', a: a};
+};
 var $author$project$Expression$Positive = function (a) {
 	return {$: 'Positive', a: a};
 };
@@ -11018,6 +11021,10 @@ var $author$project$Expression$decodeRange = function () {
 		$elm$json$Json$Decode$map,
 		$author$project$Expression$Positive,
 		A2($elm$json$Json$Decode$field, 'maximum', $elm$json$Json$Decode$int));
+	var decodeFixedRange = A2(
+		$elm$json$Json$Decode$map,
+		$author$project$Expression$Fixed,
+		A2($elm$json$Json$Decode$field, 'value', $elm$json$Json$Decode$int));
 	var decodeBetweenRange = A3(
 		$elm$json$Json$Decode$map2,
 		$author$project$Expression$Between,
@@ -11025,6 +11032,8 @@ var $author$project$Expression$decodeRange = function () {
 		A2($elm$json$Json$Decode$field, 'maximum', $elm$json$Json$Decode$int));
 	var decodeRangeType = function (aType) {
 		switch (aType) {
+			case 'Fixed':
+				return decodeFixedRange;
 			case 'Positive':
 				return decodePositiveRange;
 			case 'Between':
@@ -11039,6 +11048,7 @@ var $author$project$Expression$decodeRange = function () {
 		A2($author$project$Expression$guardedDecoder, 'Range', typeSelector),
 		$author$project$Expression$decodeTag);
 }();
+var $elm$json$Json$Decode$map4 = _Json_map4;
 var $elm$core$Tuple$pair = F2(
 	function (a, b) {
 		return _Utils_Tuple2(a, b);
@@ -11052,12 +11062,13 @@ var $author$project$Quiz$decodeDescription = function () {
 			$elm$json$Json$Decode$field,
 			'rest',
 			$elm$json$Json$Decode$list($author$project$Expression$decodeOperator)));
-	return A4(
-		$elm$json$Json$Decode$map3,
+	return A5(
+		$elm$json$Json$Decode$map4,
 		$author$project$Quiz$Description,
 		A2($elm$json$Json$Decode$field, 'numberOfQuestions', $elm$json$Json$Decode$int),
-		A2($elm$json$Json$Decode$field, 'valueRange', $author$project$Expression$decodeRange),
-		A2($elm$json$Json$Decode$field, 'operators', decodeOperators));
+		A2($elm$json$Json$Decode$field, 'leftRange', $author$project$Expression$decodeRange),
+		A2($elm$json$Json$Decode$field, 'operators', decodeOperators),
+		A2($elm$json$Json$Decode$field, 'rightRange', $author$project$Expression$decodeRange));
 }();
 var $author$project$Quiz$QuestionMessage = function (a) {
 	return {$: 'QuestionMessage', a: a};
@@ -11176,6 +11187,12 @@ var $author$project$Quiz$uncurry = F2(
 		var b = _v0.b;
 		return A2(f, a, b);
 	});
+var $elm$random$Random$constant = function (value) {
+	return $elm$random$Random$Generator(
+		function (seed) {
+			return _Utils_Tuple2(value, seed);
+		});
+};
 var $elm$random$Random$int = F2(
 	function (a, b) {
 		return $elm$random$Random$Generator(
@@ -11209,19 +11226,24 @@ var $elm$random$Random$int = F2(
 			});
 	});
 var $author$project$Expression$value = function (range) {
-	if (range.$ === 'Positive') {
-		var maximum = range.a;
-		return A2($elm$random$Random$int, 0, maximum);
-	} else {
-		var minimum = range.a;
-		var maximum = range.b;
-		return A2($elm$random$Random$int, minimum, maximum);
+	switch (range.$) {
+		case 'Fixed':
+			var n = range.a;
+			return $elm$random$Random$constant(n);
+		case 'Positive':
+			var maximum = range.a;
+			return A2($elm$random$Random$int, 0, maximum);
+		default:
+			var minimum = range.a;
+			var maximum = range.b;
+			return A2($elm$random$Random$int, minimum, maximum);
 	}
 };
 var $author$project$Quiz$configurationFrom = function (description) {
-	var vs = $author$project$Expression$value(description.valueRange);
+	var rs = $author$project$Expression$value(description.rightRange);
 	var ops = A2($author$project$Quiz$uncurry, $author$project$Expression$operator, description.operators);
-	return {operatorGenerator: ops, valueGenerator: vs};
+	var ls = $author$project$Expression$value(description.leftRange);
+	return {leftGenerator: ls, operatorGenerator: ops, rightGenerator: rs};
 };
 var $author$project$Question$CreatingQuestion = {$: 'CreatingQuestion'};
 var $author$project$Question$ExpressionReceived = function (a) {
@@ -11334,9 +11356,9 @@ var $elm$random$Random$generate = F2(
 			$elm$random$Random$Generate(
 				A2($elm$random$Random$map, tagger, generator)));
 	});
-var $author$project$Question$init = F2(
-	function (vs, ops) {
-		var generator = A3($author$project$Expression$expression, vs, ops, vs);
+var $author$project$Question$init = F3(
+	function (ls, ops, rs) {
+		var generator = A3($author$project$Expression$expression, ls, ops, rs);
 		return _Utils_Tuple2(
 			$author$project$Question$CreatingQuestion,
 			A2($elm$random$Random$generate, $author$project$Question$ExpressionReceived, generator));
@@ -11364,7 +11386,7 @@ var $elm$core$List$repeat = F2(
 	});
 var $author$project$Quiz$init = function (description) {
 	var configuration = $author$project$Quiz$configurationFrom(description);
-	var _v0 = A2($author$project$Question$init, configuration.valueGenerator, configuration.operatorGenerator);
+	var _v0 = A3($author$project$Question$init, configuration.leftGenerator, configuration.operatorGenerator, configuration.rightGenerator);
 	var question = _v0.a;
 	var cmd = _v0.b;
 	return _Utils_Tuple2(
@@ -11507,7 +11529,7 @@ var $author$project$Quiz$next = function (model) {
 	if (_v0.$ === 'Just') {
 		if (_v0.a.$ === 'Nothing') {
 			var _v1 = _v0.a;
-			var _v2 = A2($author$project$Question$init, data.configuration.valueGenerator, data.configuration.operatorGenerator);
+			var _v2 = A3($author$project$Question$init, data.configuration.leftGenerator, data.configuration.operatorGenerator, data.configuration.rightGenerator);
 			var question = _v2.a;
 			var cmd = _v2.b;
 			return _Utils_Tuple2(
