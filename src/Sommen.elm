@@ -1,11 +1,11 @@
-module Sommen exposing (..)
+module Sommen exposing (main)
 
 import Base64
 import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
 import Dict exposing (Dict)
 import Expression exposing (Operator(..), Range(..))
-import Html.Styled as Html exposing (Html)
+import Html.Styled as Html exposing (Html, a, i)
 import Json.Decode as Json
 import Quiz
 import Url exposing (Url)
@@ -33,40 +33,35 @@ init _ url _ =
     url
         |> Parser.parse (Parser.query (Query.string "quiz"))
         |> Maybe.andThen identity
-        |> Maybe.andThen (Base64.decode >> Result.toMaybe)
-        |> Maybe.andThen (Json.decodeString Quiz.decodeDescription >> Result.toMaybe)
-        |> Maybe.map Quiz.init
-        |> Maybe.map toModel
-        |> Maybe.withDefault ( CouldNotInitializeQuiz, Cmd.none )
+        |> Result.fromMaybe CouldNotRetrieveQuiz
+        |> Result.andThen (Base64.decode >> Result.mapError Base64Decode)
+        |> Result.andThen (Json.decodeString Quiz.decodeDescription >> Result.mapError JsonDecode)
+        |> Result.map Quiz.init
+        |> Result.map toModel
+        |> Result.mapError CouldNotInitializeQuiz
+        |> Result.mapError (\m -> ( m, Cmd.none ))
+        |> unwrap
 
 
-queryToDict : String -> Dict String String
-queryToDict input =
-    let
-        splitAtIndex : String -> Int -> ( String, String )
-        splitAtIndex word n =
-            ( String.left n word, String.dropLeft (n + 1) word )
+unwrap : Result a a -> a
+unwrap result =
+    case result of
+        Ok value ->
+            value
 
-        toPair query =
-            query
-                |> String.indices "="
-                |> List.head
-                |> Maybe.map (splitAtIndex query)
-
-        fill query dict =
-            query
-                |> Maybe.map (\( k, v ) -> Dict.insert k v dict)
-                |> Maybe.withDefault dict
-    in
-    input
-        |> String.split "&"
-        |> List.map toPair
-        |> List.foldl fill Dict.empty
+        Err value ->
+            value
 
 
 type Model
-    = CouldNotInitializeQuiz
+    = CouldNotInitializeQuiz Problem
     | Initialized Quiz.Model
+
+
+type Problem
+    = CouldNotRetrieveQuiz
+    | Base64Decode String
+    | JsonDecode Json.Error
 
 
 type Message
@@ -98,19 +93,32 @@ view model =
                         |> Quiz.view
                         |> Html.map QuizMessage
 
-                CouldNotInitializeQuiz ->
-                    whoops
+                CouldNotInitializeQuiz problem ->
+                    whoops problem
     in
     { title = "Sommen"
     , body = [ Html.toUnstyled html ]
     }
 
 
-whoops : Html msg
-whoops =
+whoops : Problem -> Html msg
+whoops problem =
+    let
+        explanation =
+            case problem of
+                CouldNotRetrieveQuiz ->
+                    "no quiz"
+
+                Base64Decode reason ->
+                    "base64 decode: " ++ reason
+
+                JsonDecode error ->
+                    "JSON decode: " ++ Json.errorToString error
+    in
     Html.div []
         [ Html.h1 [] [ Html.text "Sommen" ]
         , Html.p [] [ Html.text "Ik kon geen sommen maken voor jou." ]
+        , Html.p [] [ Html.text explanation ]
         ]
 
 

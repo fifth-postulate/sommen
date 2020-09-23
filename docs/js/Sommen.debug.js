@@ -10701,9 +10701,18 @@ var $elm$core$Basics$never = function (_v0) {
 	}
 };
 var $elm$browser$Browser$application = _Browser_application;
-var $author$project$Sommen$CouldNotInitializeQuiz = {$: 'CouldNotInitializeQuiz'};
+var $author$project$Sommen$Base64Decode = function (a) {
+	return {$: 'Base64Decode', a: a};
+};
+var $author$project$Sommen$CouldNotInitializeQuiz = function (a) {
+	return {$: 'CouldNotInitializeQuiz', a: a};
+};
+var $author$project$Sommen$CouldNotRetrieveQuiz = {$: 'CouldNotRetrieveQuiz'};
 var $author$project$Sommen$Initialized = function (a) {
 	return {$: 'Initialized', a: a};
+};
+var $author$project$Sommen$JsonDecode = function (a) {
+	return {$: 'JsonDecode', a: a};
 };
 var $author$project$Sommen$QuizMessage = function (a) {
 	return {$: 'QuizMessage', a: a};
@@ -10717,6 +10726,16 @@ var $elm$core$Maybe$andThen = F2(
 			return $elm$core$Maybe$Nothing;
 		}
 	});
+var $elm$core$Result$andThen = F2(
+	function (callback, result) {
+		if (result.$ === 'Ok') {
+			var value = result.a;
+			return callback(value);
+		} else {
+			var msg = result.a;
+			return $elm$core$Result$Err(msg);
+		}
+	});
 var $truqu$elm_base64$Base64$Decode$pad = function (input) {
 	var _v0 = $elm$core$String$length(input) % 4;
 	switch (_v0) {
@@ -10728,16 +10747,6 @@ var $truqu$elm_base64$Base64$Decode$pad = function (input) {
 			return input;
 	}
 };
-var $elm$core$Result$andThen = F2(
-	function (callback, result) {
-		if (result.$ === 'Ok') {
-			var value = result.a;
-			return callback(value);
-		} else {
-			var msg = result.a;
-			return $elm$core$Result$Err(msg);
-		}
-	});
 var $truqu$elm_base64$Base64$Decode$charToInt = function (_char) {
 	switch (_char.valueOf()) {
 		case 'A':
@@ -11087,6 +11096,15 @@ var $author$project$Quiz$decodeDescription = function () {
 		A2($elm$json$Json$Decode$field, 'operators', decodeOperators),
 		A2($elm$json$Json$Decode$field, 'rightRange', $author$project$Expression$decodeRange));
 }();
+var $elm$core$Result$fromMaybe = F2(
+	function (err, maybe) {
+		if (maybe.$ === 'Just') {
+			var v = maybe.a;
+			return $elm$core$Result$Ok(v);
+		} else {
+			return $elm$core$Result$Err(err);
+		}
+	});
 var $author$project$Quiz$QuestionMessage = function (a) {
 	return {$: 'QuestionMessage', a: a};
 };
@@ -11416,14 +11434,15 @@ var $author$project$Quiz$init = function (description) {
 			}),
 		A2($elm$core$Platform$Cmd$map, $author$project$Quiz$QuestionMessage, cmd));
 };
-var $elm$core$Maybe$map = F2(
-	function (f, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return $elm$core$Maybe$Just(
-				f(value));
+var $elm$core$Result$mapError = F2(
+	function (f, result) {
+		if (result.$ === 'Ok') {
+			var v = result.a;
+			return $elm$core$Result$Ok(v);
 		} else {
-			return $elm$core$Maybe$Nothing;
+			var e = result.a;
+			return $elm$core$Result$Err(
+				f(e));
 		}
 	});
 var $elm$url$Url$Parser$State = F5(
@@ -11597,12 +11616,13 @@ var $elm$url$Url$Parser$Query$string = function (key) {
 			}
 		});
 };
-var $elm$core$Result$toMaybe = function (result) {
+var $author$project$Sommen$unwrap = function (result) {
 	if (result.$ === 'Ok') {
-		var v = result.a;
-		return $elm$core$Maybe$Just(v);
+		var value = result.a;
+		return value;
 	} else {
-		return $elm$core$Maybe$Nothing;
+		var value = result.a;
+		return value;
 	}
 };
 var $author$project$Sommen$init = F3(
@@ -11614,32 +11634,44 @@ var $author$project$Sommen$init = F3(
 				$author$project$Sommen$Initialized(quiz),
 				A2($elm$core$Platform$Cmd$map, $author$project$Sommen$QuizMessage, cmd));
 		};
-		return A2(
-			$elm$core$Maybe$withDefault,
-			_Utils_Tuple2($author$project$Sommen$CouldNotInitializeQuiz, $elm$core$Platform$Cmd$none),
+		return $author$project$Sommen$unwrap(
 			A2(
-				$elm$core$Maybe$map,
-				toModel,
+				$elm$core$Result$mapError,
+				function (m) {
+					return _Utils_Tuple2(m, $elm$core$Platform$Cmd$none);
+				},
 				A2(
-					$elm$core$Maybe$map,
-					$author$project$Quiz$init,
+					$elm$core$Result$mapError,
+					$author$project$Sommen$CouldNotInitializeQuiz,
 					A2(
-						$elm$core$Maybe$andThen,
+						$elm$core$Result$map,
+						toModel,
 						A2(
-							$elm$core$Basics$composeR,
-							$elm$json$Json$Decode$decodeString($author$project$Quiz$decodeDescription),
-							$elm$core$Result$toMaybe),
-						A2(
-							$elm$core$Maybe$andThen,
-							A2($elm$core$Basics$composeR, $truqu$elm_base64$Base64$decode, $elm$core$Result$toMaybe),
+							$elm$core$Result$map,
+							$author$project$Quiz$init,
 							A2(
-								$elm$core$Maybe$andThen,
-								$elm$core$Basics$identity,
+								$elm$core$Result$andThen,
 								A2(
-									$elm$url$Url$Parser$parse,
-									$elm$url$Url$Parser$query(
-										$elm$url$Url$Parser$Query$string('quiz')),
-									url)))))));
+									$elm$core$Basics$composeR,
+									$elm$json$Json$Decode$decodeString($author$project$Quiz$decodeDescription),
+									$elm$core$Result$mapError($author$project$Sommen$JsonDecode)),
+								A2(
+									$elm$core$Result$andThen,
+									A2(
+										$elm$core$Basics$composeR,
+										$truqu$elm_base64$Base64$decode,
+										$elm$core$Result$mapError($author$project$Sommen$Base64Decode)),
+									A2(
+										$elm$core$Result$fromMaybe,
+										$author$project$Sommen$CouldNotRetrieveQuiz,
+										A2(
+											$elm$core$Maybe$andThen,
+											$elm$core$Basics$identity,
+											A2(
+												$elm$url$Url$Parser$parse,
+												$elm$url$Url$Parser$query(
+													$elm$url$Url$Parser$Query$string('quiz')),
+												url))))))))));
 	});
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
@@ -12380,6 +12412,16 @@ var $rtfeldman$elm_css$Css$Structure$compactStylesheet = function (_v0) {
 	var finalDeclarations = A2($rtfeldman$elm_css$Css$Structure$withKeyframeDeclarations, keyframesByName, compactedDeclarations);
 	return {charset: charset, declarations: finalDeclarations, imports: imports, namespaces: namespaces};
 };
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
 var $rtfeldman$elm_css$Css$Structure$Output$charsetToString = function (charset) {
 	return A2(
 		$elm$core$Maybe$withDefault,
@@ -14884,26 +14926,47 @@ var $author$project$Quiz$view = function (_v0) {
 };
 var $rtfeldman$elm_css$Html$Styled$h1 = $rtfeldman$elm_css$Html$Styled$node('h1');
 var $rtfeldman$elm_css$Html$Styled$p = $rtfeldman$elm_css$Html$Styled$node('p');
-var $author$project$Sommen$whoops = A2(
-	$rtfeldman$elm_css$Html$Styled$div,
-	_List_Nil,
-	_List_fromArray(
-		[
-			A2(
-			$rtfeldman$elm_css$Html$Styled$h1,
-			_List_Nil,
-			_List_fromArray(
-				[
-					$rtfeldman$elm_css$Html$Styled$text('Sommen')
-				])),
-			A2(
-			$rtfeldman$elm_css$Html$Styled$p,
-			_List_Nil,
-			_List_fromArray(
-				[
-					$rtfeldman$elm_css$Html$Styled$text('Ik kon geen sommen maken voor jou.')
-				]))
-		]));
+var $author$project$Sommen$whoops = function (problem) {
+	var explanation = function () {
+		switch (problem.$) {
+			case 'CouldNotRetrieveQuiz':
+				return 'no quiz';
+			case 'Base64Decode':
+				var reason = problem.a;
+				return 'base64 decode: ' + reason;
+			default:
+				var error = problem.a;
+				return 'JSON decode: ' + $elm$json$Json$Decode$errorToString(error);
+		}
+	}();
+	return A2(
+		$rtfeldman$elm_css$Html$Styled$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$rtfeldman$elm_css$Html$Styled$h1,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$rtfeldman$elm_css$Html$Styled$text('Sommen')
+					])),
+				A2(
+				$rtfeldman$elm_css$Html$Styled$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$rtfeldman$elm_css$Html$Styled$text('Ik kon geen sommen maken voor jou.')
+					])),
+				A2(
+				$rtfeldman$elm_css$Html$Styled$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$rtfeldman$elm_css$Html$Styled$text(explanation)
+					]))
+			]));
+};
 var $author$project$Sommen$view = function (model) {
 	var html = function () {
 		if (model.$ === 'Initialized') {
@@ -14913,7 +14976,8 @@ var $author$project$Sommen$view = function (model) {
 				$author$project$Sommen$QuizMessage,
 				$author$project$Quiz$view(quiz));
 		} else {
-			return $author$project$Sommen$whoops;
+			var problem = model.a;
+			return $author$project$Sommen$whoops(problem);
 		}
 	}();
 	return {
