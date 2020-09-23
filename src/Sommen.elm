@@ -9,6 +9,8 @@ import Html.Styled as Html exposing (Html)
 import Json.Decode as Json
 import Quiz
 import Url exposing (Url)
+import Url.Parser as Parser
+import Url.Parser.Query as Query
 
 
 main =
@@ -28,9 +30,9 @@ init _ url _ =
         toModel ( quiz, cmd ) =
             ( Initialized quiz, Cmd.map QuizMessage cmd )
     in
-    url.query
-        |> Maybe.map queryToDict
-        |> Maybe.andThen (Dict.get "quiz")
+    url
+        |> Parser.parse (Parser.query (Query.string "quiz"))
+        |> Maybe.andThen identity
         |> Maybe.andThen (Base64.decode >> Result.toMaybe)
         |> Maybe.andThen (Json.decodeString Quiz.decodeDescription >> Result.toMaybe)
         |> Maybe.map Quiz.init

@@ -225,7 +225,7 @@ encodeRange range =
         Fixed n ->
             Encode.object
                 [ ( "tag", Encode.string "Range" )
-                , ( "type", Encode.string "'Fixed" )
+                , ( "type", Encode.string "Fixed" )
                 , ( "value", Encode.int n )
                 ]
 
