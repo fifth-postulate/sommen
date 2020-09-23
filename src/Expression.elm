@@ -37,7 +37,8 @@ type Operator
 
 
 type Range
-    = Positive Int
+    = Fixed Int
+    | Positive Int
     | Between Int Int
 
 
@@ -49,6 +50,9 @@ expression =
 value : Range -> Generator Int
 value range =
     case range of
+        Fixed n ->
+            Random.constant n
+
         Positive maximum ->
             Random.int 0 maximum
 
@@ -218,6 +222,13 @@ decodeValue =
 encodeRange : Range -> Encode.Value
 encodeRange range =
     case range of
+        Fixed n ->
+            Encode.object
+                [ ( "tag", Encode.string "Range" )
+                , ( "type", Encode.string "'Fixed" )
+                , ( "value", Encode.int n )
+                ]
+
         Positive n ->
             Encode.object
                 [ ( "tag", Encode.string "Range" )
@@ -237,6 +248,10 @@ encodeRange range =
 decodeRange : Decoder Range
 decodeRange =
     let
+        decodeFixedRange =
+            Decode.map Fixed <|
+                Decode.field "value" Decode.int
+
         decodePositiveRange =
             Decode.map Positive <|
                 Decode.field "maximum" Decode.int
@@ -248,6 +263,9 @@ decodeRange =
 
         decodeRangeType aType =
             case aType of
+                "Fixed" ->
+                    decodeFixedRange
+
                 "Positive" ->
                     decodePositiveRange
 

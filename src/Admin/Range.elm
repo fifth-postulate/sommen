@@ -10,7 +10,8 @@ import SingleSlider
 
 
 type Model
-    = PositiveRange { slider : SingleSlider.Model, history : History RangeOption Model }
+    = FixedRange { slider : SingleSlider.Model, history : History RangeOption Model }
+    | PositiveRange { slider : SingleSlider.Model, history : History RangeOption Model }
     | BetweenRange { slider : DoubleSlider.Model, history : History RangeOption Model }
 
 
@@ -21,6 +22,9 @@ push historic current =
             toRangeOption historic
     in
     case current of
+        FixedRange ({ history } as data) ->
+            FixedRange { data | history = History.push historicRangeOption historic history }
+
         PositiveRange ({ history } as data) ->
             PositiveRange { data | history = History.push historicRangeOption historic history }
 
@@ -33,6 +37,9 @@ latest option model =
     let
         aHistory =
             case model of
+                FixedRange { history } ->
+                    history
+
                 PositiveRange { history } ->
                     history
 
@@ -45,6 +52,9 @@ latest option model =
 toRange : Model -> Range
 toRange model =
     case model of
+        FixedRange { slider } ->
+            Fixed (floor slider.value)
+
         PositiveRange { slider } ->
             Positive (floor slider.value)
 
@@ -53,13 +63,17 @@ toRange model =
 
 
 type RangeOption
-    = PositiveOption
+    = FixedOption
+    | PositiveOption
     | BetweenOption
 
 
 toRangeOption : Model -> RangeOption
 toRangeOption model =
     case model of
+        FixedRange _ ->
+            FixedOption
+
         PositiveRange _ ->
             PositiveOption
 
@@ -75,6 +89,9 @@ create =
 default : RangeOption -> Model
 default option =
     case option of
+        FixedOption ->
+            defaultFixedRange
+
         PositiveOption ->
             defaultPositiveRange
 
@@ -82,36 +99,42 @@ default option =
             defaultBetweenRange
 
 
+defaultFixedRange : Model
+defaultFixedRange =
+    FixedRange { slider = defaultSingleSlider, history = History.empty }
+
+
 defaultPositiveRange : Model
 defaultPositiveRange =
-    PositiveRange { slider = defaultPositiveSlider, history = History.empty }
-
-
-defaultPositiveSlider : SingleSlider.Model
-defaultPositiveSlider =
-    let
-        defaultSingleSlider =
-            SingleSlider.defaultModel
-    in
-    { defaultSingleSlider | min = 1, max = 200, step = 1, value = 10 }
+    PositiveRange { slider = defaultSingleSlider, history = History.empty }
 
 
 defaultBetweenRange : Model
 defaultBetweenRange =
-    BetweenRange { slider = defaultBetweenSlider, history = History.empty }
+    BetweenRange { slider = defaultDoubleSlider, history = History.empty }
 
 
-defaultBetweenSlider : DoubleSlider.Model
-defaultBetweenSlider =
+defaultSingleSlider : SingleSlider.Model
+defaultSingleSlider =
     let
-        defaultDoubleSlider =
+        slider =
+            SingleSlider.defaultModel
+    in
+    { slider | min = 1, max = 200, step = 1, value = 10 }
+
+
+defaultDoubleSlider : DoubleSlider.Model
+defaultDoubleSlider =
+    let
+        slider =
             DoubleSlider.defaultModel
     in
-    { defaultDoubleSlider | min = 1, max = 200, step = 1, lowValue = 10, highValue = 20 }
+    { slider | min = 1, max = 200, step = 1, lowValue = 10, highValue = 20 }
 
 
 type Message
-    = PositiveMessage SingleSlider.Msg
+    = FixedMessage SingleSlider.Msg
+    | PositiveMessage SingleSlider.Msg
     | BetweenMessage DoubleSlider.Msg
     | Select RangeOption
 
@@ -119,6 +142,13 @@ type Message
 update : Message -> Model -> ( Model, Cmd Message )
 update message model =
     case ( message, model ) of
+        ( FixedMessage msg, FixedRange ({ slider } as fixed) ) ->
+            let
+                ( nextSlider, cmd, _ ) =
+                    SingleSlider.update msg slider
+            in
+            ( PositiveRange { fixed | slider = nextSlider }, Cmd.map FixedMessage cmd )
+
         ( PositiveMessage msg, PositiveRange ({ slider } as positive) ) ->
             let
                 ( nextSlider, cmd, _ ) =
@@ -148,38 +178,47 @@ update message model =
 
 view : String -> Model -> Html Message
 view radiogroup model =
-    let
-        positiveChecked =
-            case model of
-                PositiveRange _ ->
-                    True
-
-                _ ->
-                    False
-
-        betweenChecked =
-            case model of
-                BetweenRange _ ->
-                    True
-
-                _ ->
-                    False
-
-        checked option _ =
-            Select option
-    in
     Html.div []
-        [ Html.input [ Attribute.type_ "radio", Attribute.name radiogroup, Attribute.checked positiveChecked, Event.onCheck <| checked PositiveOption ] []
-        , Html.label [] [ Html.text "Positive" ]
-        , Html.input [ Attribute.type_ "radio", Attribute.name radiogroup, Attribute.checked betweenChecked, Event.onCheck <| checked BetweenOption ] []
-        , Html.label [] [ Html.text "Between" ]
+        [ viewRangeOption radiogroup FixedOption model
+        , viewRangeOption radiogroup PositiveOption model
+        , viewRangeOption radiogroup BetweenOption model
         , viewSlider model
         ]
+
+
+viewRangeOption : String -> RangeOption -> Model -> Html Message
+viewRangeOption radiogroup option model =
+    let
+        checked =
+            option == toRangeOption model
+    in
+    Html.div []
+        [ Html.input [ Attribute.type_ "radio", Attribute.name radiogroup, Attribute.checked checked, Event.onCheck <| \_ -> Select option ] []
+        , Html.label [] [ Html.text <| rangeOptionToString option ]
+        ]
+
+
+rangeOptionToString : RangeOption -> String
+rangeOptionToString option =
+    case option of
+        FixedOption ->
+            "Fixed"
+
+        PositiveOption ->
+            "Positive"
+
+        BetweenOption ->
+            "Between"
 
 
 viewSlider : Model -> Html Message
 viewSlider model =
     case model of
+        FixedRange { slider } ->
+            SingleSlider.view slider
+                |> Html.fromUnstyled
+                |> Html.map FixedMessage
+
         PositiveRange { slider } ->
             SingleSlider.view slider
                 |> Html.fromUnstyled
@@ -194,6 +233,7 @@ viewSlider model =
 subscriptions : Model -> Sub Message
 subscriptions _ =
     Sub.batch
-        [ Sub.map PositiveMessage <| SingleSlider.subscriptions defaultPositiveSlider
-        , Sub.map BetweenMessage <| DoubleSlider.subscriptions defaultBetweenSlider
+        [ Sub.map FixedMessage <| SingleSlider.subscriptions defaultSingleSlider
+        , Sub.map PositiveMessage <| SingleSlider.subscriptions defaultSingleSlider
+        , Sub.map BetweenMessage <| DoubleSlider.subscriptions defaultDoubleSlider
         ]
